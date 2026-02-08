@@ -1,0 +1,11 @@
+--- a/src/nft_ext_fullcone.c
++++ b/src/nft_ext_fullcone.c
+@@ -170,8 +170,7 @@
+ }
+ 
+ static int nft_fullcone_validate(const struct nft_ctx *ctx,
+-				 const struct nft_expr *expr,
+-				 const struct nft_data **data)
++				 const struct nft_expr *expr)
+ {
+ 	int err;
