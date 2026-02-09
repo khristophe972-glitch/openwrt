@@ -7,7 +7,7 @@ PKG_RELEASE:=1
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/sbwml/nft-fullcone.git
 PKG_SOURCE_DATE:=2024-01-01
-PKG_SOURCE_VERSION:=master
+PKG_SOURCE_VERSION:=099995c86e5b4c28636e3bab550e1e355e30f593
 PKG_MIRROR_HASH:=skip
 
 include $(INCLUDE_DIR)/package.mk
