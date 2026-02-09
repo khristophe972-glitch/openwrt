@@ -5,9 +5,9 @@ PKG_NAME:=nft-fullcone
 PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/fullcone-nat-nftables/nft-fullcone.git
-PKG_SOURCE_DATE:=2023-01-01
-PKG_SOURCE_VERSION:=HEAD
+PKG_SOURCE_URL:=https://github.com/sbwml/nft-fullcone.git
+PKG_SOURCE_DATE:=2024-01-01
+PKG_SOURCE_VERSION:=master
 PKG_MIRROR_HASH:=skip
 
 include $(INCLUDE_DIR)/package.mk
@@ -22,11 +22,6 @@ define KernelPackage/nft-fullcone
 	CONFIG_NF_CONNTRACK_EVENTS=y \
 	CONFIG_NF_CONNTRACK_CHAIN_EVENTS=y
   AUTOLOAD:=$(call AutoProbe,nft_fullcone)
-endef
-
-define KernelPackage/nft-fullcone/description
-  nftables fullcone expression kernel module for OpenWrt.
-  RFC3489-compatible full cone SNAT for UDP traffic.
 endef
 
 define Build/Compile
