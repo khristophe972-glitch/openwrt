@@ -39,28 +39,28 @@ jobs:
           echo "CONFIG_PACKAGE_kmod-nft-fullcone=y" >> .config
           make defconfig
 
-      - name: Patch nft-fullcone for kernel 6.12
-        run: |
-          cd openwrt/package/kernel/nft-fullcone/src
-          echo "Fixing prandom_u32 -> get_random_u32"
-          sed -i 's/prandom_u32/get_random_u32/g' nf_nat_fullcone.c
-          echo "Fixing nft_fullcone_validate signature"
-          python3 -c "
-          import re
-          with open('nft_ext_fullcone.c', 'r') as f:
-              code = f.read()
-          code = code.replace(
-              'static int nft_fullcone_validate(const struct nft_ctx *ctx,\n\t\t\t\t const struct nft_expr *expr,\n\t\t\t\t const struct nft_data **data)',
-              'static int nft_fullcone_validate(const struct nft_ctx *ctx,\n\t\t\t\t const struct nft_expr *expr)')
-          with open('nft_ext_fullcone.c', 'w') as f:
-              f.write(code)
-          "
-          echo "Patches applied"
-
       - name: Download packages
         run: |
           cd openwrt
           make download -j$(nproc)
+
+      - name: Prepare and patch nft-fullcone
+        run: |
+          cd openwrt
+          make package/kernel/nft-fullcone/prepare V=s || true
+          find build_dir -path "*/nft-fullcone*/src/nf_nat_fullcone.c" -exec sed -i 's/prandom_u32/get_random_u32/g' {} \;
+          find build_dir -path "*/nft-fullcone*/src/nft_ext_fullcone.c" -exec python3 -c "
+          import sys
+          f = sys.argv[1]
+          with open(f, 'r') as fh:
+              code = fh.read()
+          old = 'static int nft_fullcone_validate(const struct nft_ctx *ctx,\n\t\t\t\t const struct nft_expr *expr,\n\t\t\t\t const struct nft_data **data)'
+          new = 'static int nft_fullcone_validate(const struct nft_ctx *ctx,\n\t\t\t\t const struct nft_expr *expr)'
+          code = code.replace(old, new)
+          with open(f, 'w') as fh:
+              fh.write(code)
+          " {} \;
+          echo "Patches applied"
 
       - name: Build firmware
         run: |
