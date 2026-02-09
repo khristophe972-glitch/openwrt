@@ -27,7 +27,8 @@ endef
 define Build/Compile
 	cd "$(PKG_BUILD_DIR)/src" && \
 	sed -i 's/prandom_u32/get_random_u32/g' nf_nat_fullcone.c && \
-	sed -i 's/const struct nft_data \*\*data)/)/' nft_ext_fullcone.c
+	sed -i 's/const struct nft_expr \*expr, const struct nft_data \*\*data)/const struct nft_expr *expr)/' nft_ext_fullcone.c && \
+	sed -i 's/nft_fullcone_dump(struct sk_buff \*skb, const struct nft_expr \*expr)/nft_fullcone_dump(struct sk_buff *skb, const struct nft_expr *expr, bool reset)/' nft_ext_fullcone.c
 	+$(MAKE) $(PKG_JOBS) $(KERNEL_MAKEOPTS) \
 		M="$(PKG_BUILD_DIR)/src" \
 		EXTRA_CFLAGS="$(BUILDFLAGS)" \
