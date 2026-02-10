@@ -32,11 +32,18 @@ jobs:
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
+      - name: Apply turboacc fullcone patches
+        run: |
+          cd openwrt
+          curl -sSL https://raw.githubusercontent.com/chenmozhijin/turboacc/luci/add_turboacc.sh -o add_turboacc.sh
+          bash add_turboacc.sh --no-sfe
+
       - name: Import config
         run: |
           cd openwrt
           wget https://raw.githubusercontent.com/pesa1234/MT6000_cust_build/refs/heads/main/2025-04-19_r29721-5111451803_next-r4.5.34.rss.mtk/targets/mediatek/filogic/config.buildinfo -O .config
           echo "CONFIG_PACKAGE_kmod-nft-fullcone=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-turboacc=y" >> .config
           make defconfig
 
       - name: Download packages
