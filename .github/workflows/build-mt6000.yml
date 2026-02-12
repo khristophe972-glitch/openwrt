@@ -3,6 +3,10 @@ name: Build MT6000 OpenWrt
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+  pages: write
+
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -44,6 +48,34 @@ jobs:
           wget https://raw.githubusercontent.com/pesa1234/MT6000_cust_build/refs/heads/main/2025-04-19_r29721-5111451803_next-r4.5.34.rss.mtk/targets/mediatek/filogic/config.buildinfo -O .config
           echo "CONFIG_PACKAGE_kmod-nft-fullcone=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-turboacc=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-sched=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-sched-cake=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-sched-core=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-sched-prio=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-sched-bpf=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-sched-flower=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-sched-act-vlan=y" >> .config
+          echo "CONFIG_PACKAGE_sqm-scripts=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-sqm=y" >> .config
+          echo "CONFIG_PACKAGE_tc-full=y" >> .config
+          echo "CONFIG_PACKAGE_iptables-nft=y" >> .config
+          echo "CONFIG_PACKAGE_iptables-mod-ipopt=y" >> .config
+          echo "CONFIG_PACKAGE_iptables-mod-conntrack-extra=y" >> .config
+          echo "CONFIG_PACKAGE_iptables-mod-extra=y" >> .config
+          echo "CONFIG_PACKAGE_iptables-mod-filter=y" >> .config
+          echo "CONFIG_PACKAGE_ip6tables-nft=y" >> .config
+          echo "CONFIG_PACKAGE_miniupnpd-nftables=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-upnp=y" >> .config
+          echo "CONFIG_PACKAGE_tcpdump=y" >> .config
+          echo "CONFIG_PACKAGE_iperf3=y" >> .config
+          echo "CONFIG_PACKAGE_curl=y" >> .config
+          echo "CONFIG_PACKAGE_bind-dig=y" >> .config
+          echo "CONFIG_PACKAGE_mtr=y" >> .config
+          echo "CONFIG_PACKAGE_ethtool-full=y" >> .config
+          echo "CONFIG_PACKAGE_irqbalance=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-statistics=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-nlbwmon=y" >> .config
+          echo "CONFIG_ALL_KMODS=y" >> .config
           make defconfig
 
       - name: Download packages
@@ -56,12 +88,47 @@ jobs:
           cd openwrt
           make -j$(nproc) || make -j1 V=s
 
-      - name: Find firmware files
+      - name: Prepare package repository
         run: |
-          find openwrt/bin/ -name "*.bin" -o -name "*.img" -o -name "*.ko" | head -30
+          cd openwrt
+          mkdir -p /tmp/pkg-repo/targets/mediatek/filogic/packages
+          mkdir -p /tmp/pkg-repo/packages/aarch64_cortex-a53
+          cp -a bin/targets/mediatek/filogic/packages/* /tmp/pkg-repo/targets/mediatek/filogic/packages/ 2>/dev/null || true
+          for feed in base luci packages routing telephony video; do
+            if [ -d "bin/packages/aarch64_cortex-a53/$feed" ]; then
+              mkdir -p /tmp/pkg-repo/packages/aarch64_cortex-a53/$feed
+              cp -a bin/packages/aarch64_cortex-a53/$feed/* /tmp/pkg-repo/packages/aarch64_cortex-a53/$feed/ 2>/dev/null || true
+            fi
+          done
+          mkdir -p /tmp/pkg-repo/firmware
+          cp bin/targets/mediatek/filogic/*sysupgrade* /tmp/pkg-repo/firmware/ 2>/dev/null || true
+          cp bin/targets/mediatek/filogic/*factory* /tmp/pkg-repo/firmware/ 2>/dev/null || true
+          cp bin/targets/mediatek/filogic/sha256sums /tmp/pkg-repo/firmware/ 2>/dev/null || true
+          echo "=== Package counts ==="
+          find /tmp/pkg-repo -name "*.apk" | wc -l
+          echo "=== Total size ==="
+          du -sh /tmp/pkg-repo/
 
-      - name: Upload firmware
+      - name: Deploy to gh-pages branch
+        run: |
+          cd /tmp/pkg-repo
+          git init
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git checkout -b gh-pages
+          git add .
+          git commit -m "Package repo update $(date -u +%Y-%m-%d_%H%M%S)"
+          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          git push -f origin gh-pages
+
+      - name: Upload firmware artifact
         uses: actions/upload-artifact@v4
         with:
           name: mt6000-firmware
-          path: openwrt/bin/
+          path: openwrt/bin/targets/mediatek/filogic/*
+
+      - name: Upload all packages artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mt6000-packages-all
+          path: /tmp/pkg-repo/
