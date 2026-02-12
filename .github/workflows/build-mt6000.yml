@@ -33,7 +33,11 @@ jobs:
       - name: Update feeds
         run: |
           cd openwrt
-          ./scripts/feeds update -a
+          for i in 1 2 3; do
+            ./scripts/feeds update -a && break
+            echo "Retry $i..."
+            sleep 30
+          done
           ./scripts/feeds install -a
 
       - name: Apply turboacc fullcone patches
@@ -88,47 +92,66 @@ jobs:
           cd openwrt
           make -j$(nproc) || make -j1 V=s
 
-      - name: Prepare package repository
+      - name: Debug build outputs
+        if: always()
         run: |
           cd openwrt
-          mkdir -p /tmp/pkg-repo/targets/mediatek/filogic/packages
-          mkdir -p /tmp/pkg-repo/packages/aarch64_cortex-a53
-          cp -a bin/targets/mediatek/filogic/packages/* /tmp/pkg-repo/targets/mediatek/filogic/packages/ 2>/dev/null || true
-          for feed in base luci packages routing telephony video; do
-            if [ -d "bin/packages/aarch64_cortex-a53/$feed" ]; then
-              mkdir -p /tmp/pkg-repo/packages/aarch64_cortex-a53/$feed
-              cp -a bin/packages/aarch64_cortex-a53/$feed/* /tmp/pkg-repo/packages/aarch64_cortex-a53/$feed/ 2>/dev/null || true
-            fi
-          done
-          mkdir -p /tmp/pkg-repo/firmware
-          cp bin/targets/mediatek/filogic/*sysupgrade* /tmp/pkg-repo/firmware/ 2>/dev/null || true
-          cp bin/targets/mediatek/filogic/*factory* /tmp/pkg-repo/firmware/ 2>/dev/null || true
-          cp bin/targets/mediatek/filogic/sha256sums /tmp/pkg-repo/firmware/ 2>/dev/null || true
-          echo "=== Package counts ==="
-          find /tmp/pkg-repo -name "*.apk" | wc -l
-          echo "=== Total size ==="
+          echo "=== Directory structure ==="
+          find bin/ -maxdepth 4 -type d 2>/dev/null
+          echo "=== APK files count ==="
+          find bin/ -name "*.apk" 2>/dev/null | wc -l
+          echo "=== IPK files count ==="
+          find bin/ -name "*.ipk" 2>/dev/null | wc -l
+          echo "=== Package index files ==="
+          find bin/ -name "packages.adb" -o -name "Packages" -o -name "Packages.gz" -o -name "APKINDEX*" 2>/dev/null
+          echo "=== Firmware files ==="
+          find bin/ -name "*sysupgrade*" -o -name "*factory*" 2>/dev/null
+          echo "=== Sample package files ==="
+          find bin/ -name "*.apk" -o -name "*.ipk" 2>/dev/null | head -20
+          echo "=== bin/ total size ==="
+          du -sh bin/
+
+      - name: Prepare package repository
+        if: always()
+        run: |
+          cd openwrt
+          mkdir -p /tmp/pkg-repo
+          # Copier TOUT bin/ tel quel
+          cp -a bin/* /tmp/pkg-repo/ 2>/dev/null || true
+          echo "=== Package repo contents ==="
+          find /tmp/pkg-repo -name "*.apk" -o -name "*.ipk" 2>/dev/null | wc -l
           du -sh /tmp/pkg-repo/
 
       - name: Deploy to gh-pages branch
+        if: always()
         run: |
           cd /tmp/pkg-repo
-          git init
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git checkout -b gh-pages
-          git add .
-          git commit -m "Package repo update $(date -u +%Y-%m-%d_%H%M%S)"
-          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-          git push -f origin gh-pages
+          FILE_COUNT=$(find . -type f | wc -l)
+          echo "Files to deploy: $FILE_COUNT"
+          if [ "$FILE_COUNT" -gt 0 ]; then
+            git init
+            git config user.name "GitHub Actions"
+            git config user.email "actions@github.com"
+            git checkout -b gh-pages
+            git add .
+            git commit -m "Package repo update $(date -u +%Y-%m-%d_%H%M%S)"
+            git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+            git push -f origin gh-pages
+            echo "Deployed $FILE_COUNT files to gh-pages"
+          else
+            echo "WARNING: No files found to deploy"
+          fi
 
       - name: Upload firmware artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: mt6000-firmware
-          path: openwrt/bin/targets/mediatek/filogic/*
+          path: openwrt/bin/targets/mediatek/filogic/
 
-      - name: Upload all packages artifact
+      - name: Upload packages artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mt6000-packages-all
-          path: /tmp/pkg-repo/
+          name: mt6000-packages
+          path: openwrt/bin/packages/
