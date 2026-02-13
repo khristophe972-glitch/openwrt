@@ -79,7 +79,11 @@ jobs:
           echo "CONFIG_PACKAGE_irqbalance=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-statistics=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-nlbwmon=y" >> .config
+          echo "CONFIG_PACKAGE_nano=y" >> .config
+          echo "CONFIG_PACKAGE_jq=y" >> .config
+          echo "CONFIG_PACKAGE_htop=y" >> .config
           echo "CONFIG_ALL_KMODS=y" >> .config
+          echo "CONFIG_ALL_NONSHARED=y" >> .config
           make defconfig
 
       - name: Download packages
@@ -100,26 +104,21 @@ jobs:
           find bin/ -maxdepth 4 -type d 2>/dev/null
           echo "=== APK files count ==="
           find bin/ -name "*.apk" 2>/dev/null | wc -l
-          echo "=== IPK files count ==="
-          find bin/ -name "*.ipk" 2>/dev/null | wc -l
-          echo "=== Package index files ==="
-          find bin/ -name "packages.adb" -o -name "Packages" -o -name "Packages.gz" -o -name "APKINDEX*" 2>/dev/null
           echo "=== Firmware files ==="
           find bin/ -name "*sysupgrade*" -o -name "*factory*" 2>/dev/null
-          echo "=== Sample package files ==="
-          find bin/ -name "*.apk" -o -name "*.ipk" 2>/dev/null | head -20
           echo "=== bin/ total size ==="
           du -sh bin/
+          echo "=== Disk space ==="
+          df -h
 
       - name: Prepare package repository
         if: always()
         run: |
           cd openwrt
           mkdir -p /tmp/pkg-repo
-          # Copier TOUT bin/ tel quel
           cp -a bin/* /tmp/pkg-repo/ 2>/dev/null || true
           echo "=== Package repo contents ==="
-          find /tmp/pkg-repo -name "*.apk" -o -name "*.ipk" 2>/dev/null | wc -l
+          find /tmp/pkg-repo -name "*.apk" 2>/dev/null | wc -l
           du -sh /tmp/pkg-repo/
 
       - name: Deploy to gh-pages branch
@@ -147,11 +146,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mt6000-firmware
-          path: openwrt/bin/targets/mediatek/filogic/
+          path: |
+            openwrt/bin/**/targets/mediatek/filogic/*sysupgrade*
+            openwrt/bin/**/targets/mediatek/filogic/*factory*
+            openwrt/bin/**/targets/mediatek/filogic/sha256sums
 
       - name: Upload packages artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: mt6000-packages
-          path: openwrt/bin/packages/
+          path: openwrt/bin/
