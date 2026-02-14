@@ -46,6 +46,12 @@ jobs:
           curl -sSL https://raw.githubusercontent.com/chenmozhijin/turboacc/luci/add_turboacc.sh -o add_turboacc.sh
           bash add_turboacc.sh --no-sfe
 
+          - name: Fix fullcone dependencies
+        run: |
+          cd openwrt
+          find . -path "*/nft-fullcone/Makefile" -exec sed -i 's/kmod-nf-conntrack6//g' {} \;
+          find . -path "*/nft-fullcone/Makefile" -exec cat {} \;
+          
       - name: Import config
         run: |
           cd openwrt
