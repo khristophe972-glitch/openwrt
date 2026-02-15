@@ -100,7 +100,7 @@ jobs:
           echo "CONFIG_PACKAGE_luci-lib-jsonc=y" >> .config
           echo "CONFIG_PACKAGE_lua=y" >> .config
           echo "CONFIG_ALL_KMODS=y" >> .config
-          echo "CONFIG_ALL=y" >> .config
+          echo "CONFIG_ALL_NONSHARED=y" >> .config
           make defconfig
 
       - name: Download packages
