@@ -63,48 +63,194 @@ jobs:
 
       - name: Enable all network kernel modules
         run: |
-          # Activer tous les modules réseau/netfilter désactivés dans la config générique
-          sed -i 's/^# \(CONFIG_NETFILTER\b.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_NF_.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_NFT_.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_NET_SCH_.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_NET_ACT_.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_NET_CLS.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_NET_EMATCH.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_IFB\b.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_TUN\b.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_VETH\b.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_DUMMY\b.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_MACVLAN\b.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_IPVLAN\b.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_BONDING\b.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_VXLAN\b.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_WIREGUARD\b.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_PPP\b.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_PPPOE\b.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_IP_SET.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_IP_VS.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_EBTABLES.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_BRIDGE_EBT.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_IPT_IPV6.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_IP6_NF.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_IP_NF.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_INET.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_IPV6.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_L2TP.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_MACSEC\b.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_NET_FOU.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_NET_IPGRE.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_NET_IPIP\b.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_NET_IPVTI\b.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_XFRM.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_TCP_CONG_BBR\b.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_TLS\b.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          sed -i 's/^# \(CONFIG_NETCONSOLE\b.*\) is not set/\1=m/' target/linux/generic/config-6.12
-          # Ajouter les configs absentes (ni activées ni désactivées)
-          grep -q "CONFIG_IPT_IPV6" target/linux/generic/config-6.12 || echo "CONFIG_IPT_IPV6=m" >> target/linux/generic/config-6.12
-          grep -q "CONFIG_IPT_IPV6_EXTRA" target/linux/generic/config-6.12 || echo "CONFIG_IPT_IPV6_EXTRA=m" >> target/linux/generic/config-6.12
-          grep -q "CONFIG_EBTABLES" target/linux/generic/config-6.12 || echo "CONFIG_EBTABLES=m" >> target/linux/generic/config-6.12
+          # Activer uniquement les modules réseau/netfilter nécessaires
+          # Approche ciblée : liste explicite des configs à activer
+          CONFIG=target/linux/generic/config-6.12
+          activate() {
+            local cfg=$1
+            if grep -q "^# $cfg is not set" $CONFIG; then
+              sed -i "s/^# $cfg is not set/$cfg=m/" $CONFIG
+            elif ! grep -q "^$cfg=" $CONFIG; then
+              echo "$cfg=m" >> $CONFIG
+            fi
+          }
+          # Schedulers QoS
+          activate CONFIG_NET_SCH_CAKE
+          activate CONFIG_NET_SCH_CODEL
+          activate CONFIG_NET_SCH_FQ
+          activate CONFIG_NET_SCH_FQ_PIE
+          activate CONFIG_NET_SCH_GRED
+          activate CONFIG_NET_SCH_HFSC
+          activate CONFIG_NET_SCH_HTB
+          activate CONFIG_NET_SCH_INGRESS
+          activate CONFIG_NET_SCH_MQPRIO
+          activate CONFIG_NET_SCH_MULTIQ
+          activate CONFIG_NET_SCH_NETEM
+          activate CONFIG_NET_SCH_PIE
+          activate CONFIG_NET_SCH_PRIO
+          activate CONFIG_NET_SCH_RED
+          activate CONFIG_NET_SCH_SFQ
+          activate CONFIG_NET_SCH_SKBPRIO
+          activate CONFIG_NET_SCH_TBF
+          activate CONFIG_NET_SCH_TEQL
+          activate CONFIG_NET_SCH_DRR
+          activate CONFIG_NET_SCH_ETS
+          # Actions TC
+          activate CONFIG_NET_ACT_CSUM
+          activate CONFIG_NET_ACT_GACT
+          activate CONFIG_NET_ACT_MIRRED
+          activate CONFIG_NET_ACT_PEDIT
+          activate CONFIG_NET_ACT_POLICE
+          activate CONFIG_NET_ACT_SAMPLE
+          activate CONFIG_NET_ACT_SIMP
+          activate CONFIG_NET_ACT_SKBEDIT
+          activate CONFIG_NET_ACT_SKBMOD
+          activate CONFIG_NET_ACT_VLAN
+          activate CONFIG_NET_ACT_BPF
+          activate CONFIG_NET_CLS_ACT
+          activate CONFIG_NET_CLS_BASIC
+          activate CONFIG_NET_CLS_BPF
+          activate CONFIG_NET_CLS_FLOW
+          activate CONFIG_NET_CLS_FLOWER
+          activate CONFIG_NET_CLS_FW
+          activate CONFIG_NET_CLS_MATCHALL
+          activate CONFIG_NET_CLS_ROUTE4
+          activate CONFIG_NET_CLS_U32
+          activate CONFIG_NET_EMATCH
+          activate CONFIG_NET_EMATCH_CMP
+          activate CONFIG_NET_EMATCH_META
+          activate CONFIG_NET_EMATCH_NBYTE
+          activate CONFIG_NET_EMATCH_TEXT
+          activate CONFIG_NET_EMATCH_U32
+          # Interfaces virtuelles
+          activate CONFIG_IFB
+          activate CONFIG_TUN
+          activate CONFIG_VETH
+          activate CONFIG_DUMMY
+          activate CONFIG_MACVLAN
+          activate CONFIG_IPVLAN
+          activate CONFIG_BONDING
+          activate CONFIG_VXLAN
+          activate CONFIG_MACSEC
+          # Netfilter / iptables
+          activate CONFIG_NETFILTER
+          activate CONFIG_NETFILTER_ADVANCED
+          activate CONFIG_NETFILTER_INGRESS
+          activate CONFIG_NETFILTER_EGRESS
+          activate CONFIG_NF_CONNTRACK
+          activate CONFIG_NF_CONNTRACK_MARK
+          activate CONFIG_NF_CONNTRACK_EVENTS
+          activate CONFIG_NF_CONNTRACK_ZONES
+          activate CONFIG_NF_CT_NETLINK
+          activate CONFIG_NF_CT_NETLINK_HELPER
+          activate CONFIG_NF_CT_NETLINK_TIMEOUT
+          activate CONFIG_NF_NAT
+          activate CONFIG_NF_NAT6
+          activate CONFIG_NF_FLOW_TABLE
+          activate CONFIG_NF_DUP_IPV4
+          activate CONFIG_NF_DUP_IPV6
+          activate CONFIG_NFT_FLOW_OFFLOAD
+          activate CONFIG_NFT_CONNLIMIT
+          activate CONFIG_NFT_SOCKET
+          activate CONFIG_NFT_TPROXY
+          activate CONFIG_NFT_XFRM
+          activate CONFIG_NFT_DUP_IPV4
+          activate CONFIG_NFT_DUP_IPV6
+          activate CONFIG_IP_NF_IPTABLES
+          activate CONFIG_IP_NF_FILTER
+          activate CONFIG_IP_NF_TARGET_REJECT
+          activate CONFIG_IP_NF_MANGLE
+          activate CONFIG_IP_NF_RAW
+          activate CONFIG_IP_NF_ARPTABLES
+          activate CONFIG_IP_NF_ARPFILTER
+          activate CONFIG_IP_NF_ARP_MANGLE
+          activate CONFIG_IP6_NF_IPTABLES
+          activate CONFIG_IP6_NF_FILTER
+          activate CONFIG_IP6_NF_MANGLE
+          activate CONFIG_IP6_NF_RAW
+          activate CONFIG_IPT_IPV6
+          activate CONFIG_IPT_IPV6_EXTRA
+          activate CONFIG_EBTABLES
+          activate CONFIG_BRIDGE_NF_EBTABLES
+          activate CONFIG_BRIDGE_EBT_BROUTE
+          activate CONFIG_BRIDGE_EBT_T_FILTER
+          activate CONFIG_BRIDGE_EBT_T_NAT
+          activate CONFIG_BRIDGE_EBT_802_3
+          activate CONFIG_BRIDGE_EBT_AMONG
+          activate CONFIG_BRIDGE_EBT_ARP
+          activate CONFIG_BRIDGE_EBT_IP
+          activate CONFIG_BRIDGE_EBT_IP6
+          activate CONFIG_BRIDGE_EBT_LIMIT
+          activate CONFIG_BRIDGE_EBT_MARK
+          activate CONFIG_BRIDGE_EBT_PKTTYPE
+          activate CONFIG_BRIDGE_EBT_STP
+          activate CONFIG_BRIDGE_EBT_VLAN
+          activate CONFIG_BRIDGE_EBT_ARPREPLY
+          activate CONFIG_BRIDGE_EBT_DNAT
+          activate CONFIG_BRIDGE_EBT_MARK_T
+          activate CONFIG_BRIDGE_EBT_REDIRECT
+          activate CONFIG_BRIDGE_EBT_SNAT
+          activate CONFIG_BRIDGE_EBT_LOG
+          activate CONFIG_BRIDGE_EBT_NFLOG
+          # IP sets
+          activate CONFIG_IP_SET
+          activate CONFIG_IP_SET_HASH_IP
+          activate CONFIG_IP_SET_HASH_IPMAC
+          activate CONFIG_IP_SET_HASH_IPPORT
+          activate CONFIG_IP_SET_HASH_NET
+          activate CONFIG_IP_SET_LIST_SET
+          # Conntrack netlink
+          activate CONFIG_NF_CONNTRACK_NETLINK
+          activate CONFIG_NETFILTER_NETLINK_GLUE_CT
+          # PPP / tunnels
+          activate CONFIG_PPP
+          activate CONFIG_PPPOE
+          activate CONFIG_PPPOL2TP
+          activate CONFIG_PPP_ASYNC
+          activate CONFIG_PPP_MPPE
+          activate CONFIG_PPP_SYNC_TTY
+          activate CONFIG_L2TP
+          activate CONFIG_L2TP_ETH
+          activate CONFIG_L2TP_IP
+          activate CONFIG_NET_IPGRE
+          activate CONFIG_NET_IPGRE_DEMUX
+          activate CONFIG_NET_IPIP
+          activate CONFIG_NET_IPVTI
+          activate CONFIG_NET_FOU
+          activate CONFIG_IPV6_SIT
+          activate CONFIG_IPV6_TUNNEL
+          activate CONFIG_IPV6_VTI
+          activate CONFIG_IPV6_FOU
+          activate CONFIG_INET_AH
+          activate CONFIG_INET_ESP
+          activate CONFIG_INET_IPCOMP
+          activate CONFIG_INET_TUNNEL
+          activate CONFIG_INET_DIAG
+          activate CONFIG_INET_TCP_DIAG
+          activate CONFIG_INET_UDP_DIAG
+          # XFRM (VPN)
+          activate CONFIG_XFRM_USER
+          activate CONFIG_XFRM_INTERFACE
+          activate CONFIG_XFRM_IPCOMP
+          # QoS / Wireguard / divers
+          activate CONFIG_WIREGUARD
+          activate CONFIG_TCP_CONG_BBR
+          activate CONFIG_TLS
+          activate CONFIG_NETCONSOLE
+          activate CONFIG_NETLINK_DIAG
+          activate CONFIG_PACKET_DIAG
+          activate CONFIG_UNIX_DIAG
+          activate CONFIG_NET_VRF
+          activate CONFIG_PSAMPLE
+          activate CONFIG_NET_UDP_TUNNEL
+          activate CONFIG_SCHED_CONNMARK
+          activate CONFIG_NET_SCH_ACT_CTINFO
+          activate CONFIG_NET_ACT_CONNMARK
+          activate CONFIG_NET_SCH_CTINFO
+          # Corriger les options bool qui ne peuvent pas être =m
+          for opt in XFRM_SUB_POLICY XFRM_MIGRATE XFRM_STATISTICS NF_CT_PROTO_SCTP NF_CT_PROTO_UDPLITE NF_FLOW_TABLE_PROCFS NETFILTER_NETLINK_GLUE_CT NETFILTER_EGRESS NETFILTER_INGRESS; do
+            sed -i "s/^CONFIG_${opt}=m/CONFIG_${opt}=y/" target/linux/generic/config-6.12
+          done
       - name: Update feeds
         run: |
           ./scripts/feeds update -a
@@ -156,6 +302,8 @@ jobs:
           CONFIG_PACKAGE_nano=y
           EOF
           make defconfig
+          # Résoudre les nouvelles options sans réponse (évite les blocages interactifs)
+          make kernel_olddefconfig
 
       - name: Download sources
         run: make download -j8 V=s 2>&1 | tee download.log
