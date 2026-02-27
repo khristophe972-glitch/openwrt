@@ -8,8 +8,6 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: write
-    permissions:
-      contents: write
     timeout-minutes: 180
 
     steps:
@@ -33,8 +31,6 @@ jobs:
           mkdir -p package/libs/libnftnl/patches
           curl -sL "https://raw.githubusercontent.com/immortalwrt/immortalwrt/master/package/libs/libnftnl/patches/001-libnftnl-add-fullcone-expression-support.patch" \
             -o package/libs/libnftnl/patches/001-libnftnl-add-fullcone-expression-support.patch
-
-          # Add PKG_FIXUP:=autoreconf to libnftnl Makefile (needed for fullcone patch)
           sed -i '/^PKG_INSTALL/i PKG_FIXUP:=autoreconf' package/libs/libnftnl/Makefile
 
           # nftables fullcone patch
@@ -64,15 +60,12 @@ jobs:
           curl -sL "https://raw.githubusercontent.com/immortalwrt/immortalwrt/master/package/network/utils/fullconenat/src/Makefile" \
             -o package/network/utils/fullconenat/src/Makefile
 
-
       - name: Enable all network kernel modules
         run: |
-          # Utiliser la config kernel ImmortalWrt qui a tout activé
           curl -sL "https://raw.githubusercontent.com/immortalwrt/immortalwrt/master/target/linux/mediatek/filogic/config-6.12" \
             -o target/linux/mediatek/filogic/config-6.12
           curl -sL "https://raw.githubusercontent.com/immortalwrt/immortalwrt/master/target/linux/generic/config-6.12" \
             -o target/linux/generic/config-6.12
-
 
       - name: Update feeds
         run: |
@@ -101,18 +94,6 @@ jobs:
           CONFIG_PACKAGE_kmod-sched-connmark=y
           CONFIG_PACKAGE_kmod-sched=y
           CONFIG_PACKAGE_kmod-ifb=y
-          CONFIG_ATL2=m
-          CONFIG_B53_MDIO_DRIVER=m
-          CONFIG_BRIDGE_NETFILTER=m
-          CONFIG_INET6_AH=m
-          CONFIG_INET6_ESP=m
-          CONFIG_INET6_IPCOMP=m
-          CONFIG_INET6_TUNNEL=m
-          CONFIG_INET6_XFRM_TUNNEL=m
-          CONFIG_IP_SCTP=m
-          CONFIG_LWTUNNEL=m
-          CONFIG_NET_EMATCH=m
-          CONFIG_NET_IP_TUNNEL=m
           CONFIG_PACKAGE_iptables=y
           CONFIG_PACKAGE_iptables-mod-ipopt=y
           CONFIG_PACKAGE_kmod-ipt-core=y
@@ -127,14 +108,7 @@ jobs:
           make defconfig
           # Pré-configurer le repo APK custom dans le firmware
           mkdir -p files/etc/apk
-          cat > files/etc/apk/repositories << 'REPOEOF'
-https://downloads.openwrt.org/releases/25.12-SNAPSHOT/targets/mediatek/filogic/packages
-https://downloads.openwrt.org/releases/25.12-SNAPSHOT/packages/aarch64_cortex-a53/base
-https://downloads.openwrt.org/releases/25.12-SNAPSHOT/packages/aarch64_cortex-a53/luci
-https://downloads.openwrt.org/releases/25.12-SNAPSHOT/packages/aarch64_cortex-a53/packages
-https://downloads.openwrt.org/releases/25.12-SNAPSHOT/packages/aarch64_cortex-a53/routing
-https://github.com/khristophe972-glitch/openwrt/releases/download/openwrt-25.12-kmods
-REPOEOF
+          printf 'https://downloads.openwrt.org/releases/25.12-SNAPSHOT/targets/mediatek/filogic/packages\nhttps://downloads.openwrt.org/releases/25.12-SNAPSHOT/packages/aarch64_cortex-a53/base\nhttps://downloads.openwrt.org/releases/25.12-SNAPSHOT/packages/aarch64_cortex-a53/luci\nhttps://downloads.openwrt.org/releases/25.12-SNAPSHOT/packages/aarch64_cortex-a53/packages\nhttps://downloads.openwrt.org/releases/25.12-SNAPSHOT/packages/aarch64_cortex-a53/routing\nhttps://github.com/khristophe972-glitch/openwrt/releases/download/openwrt-25.12-kmods\n' > files/etc/apk/repositories
 
       - name: Download sources
         run: make download -j8 V=s 2>&1 | tee download.log
