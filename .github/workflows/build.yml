@@ -131,6 +131,7 @@ jobs:
           TAG="openwrt-25.12-kmods"
           gh release delete "$TAG" --yes 2>/dev/null || true
           git push origin --delete "$TAG" 2>/dev/null || true
+          git tag -d "$TAG" 2>/dev/null || true
           gh release create "$TAG" \
             --title "OpenWrt 25.12 GL-MT6000 APK repo" \
             --notes "Kernel modules and packages for GL-MT6000 OpenWrt 25.12 with fullcone NAT" \
