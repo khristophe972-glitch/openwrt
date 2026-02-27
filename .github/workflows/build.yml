@@ -6,6 +6,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    permissions:
+      contents: write
     timeout-minutes: 180
 
     steps:
@@ -121,7 +125,16 @@ jobs:
           CONFIG_PACKAGE_nano=y
           EOF
           make defconfig
-
+          # Pré-configurer le repo APK custom dans le firmware
+          mkdir -p files/etc/apk
+          cat > files/etc/apk/repositories << 'REPOEOF'
+https://downloads.openwrt.org/releases/25.12-SNAPSHOT/targets/mediatek/filogic/packages
+https://downloads.openwrt.org/releases/25.12-SNAPSHOT/packages/aarch64_cortex-a53/base
+https://downloads.openwrt.org/releases/25.12-SNAPSHOT/packages/aarch64_cortex-a53/luci
+https://downloads.openwrt.org/releases/25.12-SNAPSHOT/packages/aarch64_cortex-a53/packages
+https://downloads.openwrt.org/releases/25.12-SNAPSHOT/packages/aarch64_cortex-a53/routing
+https://github.com/khristophe972-glitch/openwrt/releases/download/openwrt-25.12-kmods
+REPOEOF
 
       - name: Download sources
         run: make download -j8 V=s 2>&1 | tee download.log
@@ -136,6 +149,20 @@ jobs:
           path: |
             bin/targets/mediatek/filogic/openwrt-mediatek-filogic-glinet_gl-mt6000-squashfs-sysupgrade.bin
             bin/targets/mediatek/filogic/openwrt-mediatek-filogic-glinet_gl-mt6000-squashfs-factory.bin
+
+      - name: Publish APK repo to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="openwrt-25.12-kmods"
+          gh release delete "$TAG" --yes 2>/dev/null || true
+          git push origin --delete "$TAG" 2>/dev/null || true
+          gh release create "$TAG" \
+            --title "OpenWrt 25.12 GL-MT6000 APK repo" \
+            --notes "Kernel modules and packages for GL-MT6000 OpenWrt 25.12 with fullcone NAT" \
+            --prerelease
+          find bin/targets/mediatek/filogic/packages/ -name "*.apk" | xargs gh release upload "$TAG" --clobber
+          find bin/packages/aarch64_cortex-a53/ -name "*.apk" | xargs gh release upload "$TAG" --clobber
 
       - name: Upload logs on failure
         if: failure()
