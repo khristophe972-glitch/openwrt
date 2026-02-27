@@ -135,8 +135,14 @@ jobs:
             --title "OpenWrt 25.12 GL-MT6000 APK repo" \
             --notes "Kernel modules and packages for GL-MT6000 OpenWrt 25.12 with fullcone NAT" \
             --prerelease
-          find bin/targets/mediatek/filogic/packages/ -name "*.apk" | xargs gh release upload "$TAG" --clobber
-          find bin/packages/aarch64_cortex-a53/ -name "*.apk" | xargs gh release upload "$TAG" --clobber
+          find bin/targets/mediatek/filogic/packages/ -name "*.apk" | while read f; do
+            gh release upload "$TAG" "$f" --clobber
+            sleep 0.5
+          done
+          find bin/packages/aarch64_cortex-a53/ -name "*.apk" | while read f; do
+            gh release upload "$TAG" "$f" --clobber
+            sleep 0.5
+          done
 
       - name: Upload logs on failure
         if: failure()
