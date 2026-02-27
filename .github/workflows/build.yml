@@ -145,7 +145,6 @@ jobs:
           activate CONFIG_NF_CT_NETLINK_HELPER
           activate CONFIG_NF_CT_NETLINK_TIMEOUT
           activate CONFIG_NF_NAT
-          activate CONFIG_NF_NAT6
           activate CONFIG_NF_FLOW_TABLE
           activate CONFIG_NF_DUP_IPV4
           activate CONFIG_NF_DUP_IPV6
@@ -168,8 +167,6 @@ jobs:
           activate CONFIG_IP6_NF_FILTER
           activate CONFIG_IP6_NF_MANGLE
           activate CONFIG_IP6_NF_RAW
-          activate CONFIG_IPT_IPV6
-          activate CONFIG_IPT_IPV6_EXTRA
           activate CONFIG_EBTABLES
           activate CONFIG_BRIDGE_NF_EBTABLES
           activate CONFIG_BRIDGE_EBT_BROUTE
@@ -200,7 +197,6 @@ jobs:
           activate CONFIG_IP_SET_HASH_NET
           activate CONFIG_IP_SET_LIST_SET
           # Conntrack netlink
-          activate CONFIG_NF_CONNTRACK_NETLINK
           activate CONFIG_NETFILTER_NETLINK_GLUE_CT
           # PPP / tunnels
           activate CONFIG_PPP
@@ -243,10 +239,6 @@ jobs:
           activate CONFIG_NET_VRF
           activate CONFIG_PSAMPLE
           activate CONFIG_NET_UDP_TUNNEL
-          activate CONFIG_SCHED_CONNMARK
-          activate CONFIG_NET_SCH_ACT_CTINFO
-          activate CONFIG_NET_ACT_CONNMARK
-          activate CONFIG_NET_SCH_CTINFO
           # Corriger les options bool qui ne peuvent pas être =m
           for opt in XFRM_SUB_POLICY XFRM_MIGRATE XFRM_STATISTICS NF_CT_PROTO_SCTP NF_CT_PROTO_UDPLITE NF_FLOW_TABLE_PROCFS NETFILTER_NETLINK_GLUE_CT NETFILTER_EGRESS NETFILTER_INGRESS; do
             sed -i "s/^CONFIG_${opt}=m/CONFIG_${opt}=y/" target/linux/generic/config-6.12
@@ -302,8 +294,7 @@ jobs:
           CONFIG_PACKAGE_nano=y
           EOF
           make defconfig
-          # Résoudre les nouvelles options sans réponse (évite les blocages interactifs)
-          make kernel_olddefconfig
+
 
       - name: Download sources
         run: make download -j8 V=s 2>&1 | tee download.log
