@@ -10,7 +10,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-24.04
-    timeout-minutes: 180
+    timeout-minutes: 360
 
     steps:
       - name: Free disk space
@@ -129,7 +129,6 @@ jobs:
           CONFIG_PACKAGE_bash=y
           CONFIG_PACKAGE_jq=y
           CONFIG_ALL_KMODS=y
-          CONFIG_ALL=y
           EOF
           make defconfig
           # Pré-configurer le repo APK custom dans le firmware
