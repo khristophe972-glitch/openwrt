@@ -26,7 +26,7 @@ jobs:
 
       - name: Clone sources
         run: |
-          git clone --branch next-r4.7.3.rss.mtk --single-branch https://github.com/khristophe972-glitch/openwrt.git openwrt
+          git clone --branch next-r4.7.3.rss.mtk --single-branch https://github.com/${{ github.repository }}.git openwrt
           cd openwrt
           git log --oneline -5
 
@@ -100,7 +100,7 @@ jobs:
           echo "CONFIG_PACKAGE_luci-lib-jsonc=y" >> .config
           echo "CONFIG_PACKAGE_lua=y" >> .config
           echo "CONFIG_ALL_KMODS=y" >> .config
-          echo "CONFIG_ALL=y" >> .config
+          echo "CONFIG_ALL_NONSHARED=y" >> .config
           make defconfig
 
       - name: Download packages
